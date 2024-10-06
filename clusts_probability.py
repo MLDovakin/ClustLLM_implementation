@@ -44,7 +44,7 @@ def get_triplets(embeddings, clusters, centroids, entropies, n_triplets=5):
         triplets.append((anchor, c1, c2))
     return triplets
 
-clusters, centroids = cluster_embeddings(embeddings)
+clusters, centroids = clustering(df, embeddings, n_clusters=70)
 df['Сluster'] = clusters
 
 closest_clusters, distances = calculate_distances(embeddings, centroids)
