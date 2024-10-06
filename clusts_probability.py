@@ -1,53 +1,60 @@
-from scipy.spatial.distance import cdist
-
-def get_prob_summ(target_emb, cl_d, alpha):
-
-  closes_summ = []
-
-  for cl, emb in cl_d.items():
-
-    centroid_emb = np.mean(emb, axis=0) 
-
-    diff_e = cdist([target_emb], [centroid_emb], metric='euclidean')[0]
-
-    closes_summ.append( ((1 + diff_e**2)/alpha)**(-((alpha+1)/2) ) )
-
-  closes_summ = sum(closes_summ)
-
-  return closes_summ
-
-def get_probs(target_emb, clust_emb, cl_d, alpha):
-
-  centroid_clust = np.mean(clust_emb, axis=0)
-  diff_e = np.linalg.norm(target_emb- centroid_clust)
-
-  closest_p =  ((1 + diff_e**2)/alpha)**(-((alpha+1)/2) )
-
-  closes_summ = get_prob_summ( target_emb, cl_d, alpha)
-
-  p_ik =  closest_p / closes_summ
-  return p_ik
-
-sampling_clusts = {}
-alpha = 1
-n = 0
-for data_point in range(len(df)) :
-
-  data_point_name = df['Cluster'][data_point]
-  point_embedding  = df['Embeddings'][data_point]
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin_min
+from scipy.stats import entropy
+from sklearn.cluster import AgglomerativeClustering
 
 
-  prob_list = []
-  point_id  = 0
+def clustering(df, embeddings, n_clusters=70):
 
-  for prob_clust, prob_emb in cl_d.items():
+    wards = AgglomerativeClustering(n_clusters=n_clusters, linkage="ward").fit(embeddings)
+    label = ward.labels_
+    centroids = wards.centroids_
 
-    point_id  += 1
+    return clusters, centroids
 
-    prob_summ = get_probs(point_embedding, prob_emb, cl_d, alpha)
-    prob_list.append((prob_clust, prob_summ.tolist()[0]))
+def calculate_distances(embeddings, centroids):
+    closest_clusters, distances = pairwise_distances_argmin_min(embeddings, centroids)
+    return closest_clusters, distances
 
-    #print(data_point_name, point_id, prob_clust, prob_summ)
-  #print({str(data_point)+ '_' + str(data_point_name): prob_list })
-  #n +=1
-  sampling_clusts.update({str(point_id) + '_df_ind_'+ str(data_point)+ '_clust_' + str(data_point_name): prob_list })
+def get_entropy(embeddings, centroids):
+
+    cluster_probs = np.exp(-np.linalg.norm(embeddings[:, None] - centroids, axis=2))
+    cluster_probs /= cluster_probs.sum(axis=1, keepdims=True) 
+
+    entropies = np.apply_along_axis(entropy, 1, cluster_probs)
+    return entropies
+
+def get_triplets(embeddings, clusters, centroids, entropies, n_triplets=5):
+    triplets = []
+    high_entropy_indices = np.argsort(entropies)[-n_triplets:]  
+
+    # Выбираем объекты с наибольшей энтропией чтобы потом подать их на вход LLM
+    for idx in high_entropy_indices:
+        anchor = embeddings[idx]
+        anchor_cluster = clusters[idx]
+
+        candidate_clusters = [i for i in range(len(centroids)) if i != anchor_cluster]
+        choices = np.random.choice(candidate_clusters, size=2, replace=False)
+
+        c1 = centroids[choices[0]]
+        c2 = centroids[choices[1]]
+
+        triplets.append((anchor, c1, c2))
+    return triplets
+
+clusters, centroids = cluster_embeddings(embeddings)
+df['Сluster'] = clusters
+
+closest_clusters, distances = calculate_distances(embeddings, centroids)
+
+entropies = get_entropy(embeddings, centroids)
+
+triplets = get_triplets(embeddings, clusters, centroids, entropies)
+
+df['entropy'] = entropies
+
+df.head(), triplets
+
+
