@@ -44,8 +44,8 @@ def train_model(train_data, val_data,  epochs=30, batch_size=32):
     loss = losses.TripletLoss(model=model)
     
     model.fit(train_objectives=[(train_dataloader, loss)],
-              epochs=10, 
-              optimizer_params = {'lr': 2e-07, 'weight_decay': 0.01, 'betas': (0.9, 0.999),},
+              epochs=30, 
+              optimizer_params = {'lr': 1.25e-5, 'weight_decay': 0.01, 'betas': (0.9, 0.999),},
               optimizer_class=torch.optim.AdamW, evaluation_steps = 1000, scheduler='WarmupCosine',
               warmup_steps=1000,  
               evaluator=dev_evaluator,
