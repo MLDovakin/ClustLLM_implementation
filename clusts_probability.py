@@ -1,10 +1,5 @@
-import pandas as pd
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.cluster import AgglomerativeClustering
-from scipy.spatial.distance import cdist
+cluster_labels = df['Кластер'].values
 
-cluster_labels = label
 def calculate_entropy(embeddings, cluster_labels, K=4):
 
     cluster_centers = np.array([embeddings[cluster_labels == i].mean(axis=0) for i in np.unique(cluster_labels)])
@@ -23,11 +18,16 @@ def calculate_entropy(embeddings, cluster_labels, K=4):
 
 entropies = calculate_entropy(embeddings, cluster_labels)
 
-def select_triplets_by_entropy(embeddings, entropies, cluster_labels, top_n=5000):
+def select_triplets_by_entropy(embeddings, entropies, cluster_labels, y_min=20, y_max=80, top_n=20000):
 
     triplets = []
 
-    high_entropy_indices = np.argsort(entropies)[-top_n:]
+    entropy_thresh_min = np.percentile(entropies, y_min)
+    entropy_thresh_max = np.percentile(entropies, y_max)
+
+    entropy_thresh_ind = np.where((entropies >= entropy_thresh_min) & (entropies <= entropy_thresh_max))[0]
+
+    high_entropy_indices = entropy_thresh_ind[np.argsort(entropies[entropy_thresh_ind])[-top_n:]]
 
     for idx in high_entropy_indices:
         anchor = embeddings[idx]
@@ -49,6 +49,6 @@ def select_triplets_by_entropy(embeddings, entropies, cluster_labels, top_n=5000
 
     return triplets
 
-triplets = select_triplets_by_entropy(embeddings, entropies, cluster_labels)
-
-
+y_min = 20
+y_max = 80 
+triplets = select_triplets_by_entropy(embeddings, entropies, cluster_labels, y_min, y_max)
