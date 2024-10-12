@@ -8,19 +8,6 @@ from sentence_transformers import (
     SentenceTransformerModelCardData,
 )
 
-train_data = format_triplets_for_model(train_triplets)
-val_data = format_triplets_for_model(val_triplets)
-
-anchors = []
-positive = []
-negative = []
-
-for i, triplet in enumerate(val_triplets[:2500]):
-
-
-    anchors.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[0])[0][0]])
-    positive.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[1])[0][0]])
-    negative.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[2])[0][0]])
 
 epochs=30
 batch_size=8
@@ -33,6 +20,15 @@ def format_triplets_for_model(triplets):
 
 train_data = format_triplets_for_model(train_triplets)
 val_data = format_triplets_for_model(val_triplets)
+
+anchors = []
+positive = []
+negative = []
+for i, triplet in enumerate(val_triplets[:2500]):
+    anchors.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[0])[0][0]])
+    positive.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[1])[0][0]])
+    negative.append(df['Вопрос пользователя'].iloc[np.where(embeddings == triplet[2])[0][0]])
+
 
 def train_model(train_data, val_data,  epochs=30, batch_size=32):
 
