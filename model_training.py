@@ -10,7 +10,7 @@ from sentence_transformers import (
 
 
 epochs=30
-batch_size=8
+batch_size=16
 
 train_triplets, val_triplets = train_test_split(triplets, test_size=0.2, random_state=42)
 
@@ -43,15 +43,14 @@ def train_model(train_data, val_data,  epochs=30, batch_size=32):
       )
     loss = losses.TripletLoss(model=model)
     
-    warmup_steps = 0
     model.fit(train_objectives=[(train_dataloader, loss)],
-              epochs=epochs,
-              optimizer_params = {'lr': 1e-05, 'weight_decay': 0.01},
-              optimizer_class=torch.optim.RAdam,
-              warmup_steps=warmup_steps,
-              evaluator=dev_evaluator,  
+              epochs=10, 
+              optimizer_params = {'lr': 2e-07, 'weight_decay': 0.01, 'betas': (0.9, 0.999),},
+              optimizer_class=torch.optim.AdamW, evaluation_steps = 1000, scheduler='WarmupCosine',
+              warmup_steps=1000,  
+              evaluator=dev_evaluator,
               output_path="output/sentence-transformers-model")
-    
+
     return model
 
 trained_model = train_model(train_data, val_data, epochs=30)
