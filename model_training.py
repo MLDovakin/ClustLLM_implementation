@@ -41,13 +41,13 @@ def train_model(train_data, val_data,  epochs=30, batch_size=32):
     negatives=negative,
     name='embedding_model-e5',
       )
-    loss = losses.TripletLoss(model=model)
+    loss = losses.TripletLoss(model=model, triplet_margin = 2)
     
     model.fit(train_objectives=[(train_dataloader, loss)],
               epochs=30, 
               optimizer_params = {'lr': 1.25e-5, 'weight_decay': 0.01, 'betas': (0.9, 0.999),},
               optimizer_class=torch.optim.AdamW, evaluation_steps = 1000, scheduler='WarmupCosine',
-              warmup_steps=1000,  
+              warmup_steps=int(len(train_dataloader) * 0.1),  
               evaluator=dev_evaluator,
               output_path="output/sentence-transformers-model")
 
